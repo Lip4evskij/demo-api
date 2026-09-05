@@ -4,7 +4,7 @@
 - [x] Этап 1: Миграции, модели, factories, seeders (код написан, **не верифицирован запуском** — см. заметки)
 - [x] Этап 2: DTO (код написан, **не верифицирован запуском**)
 - [x] Этап 3: Импорт (endpoint + Job + идемпотентность) + тесты (код написан, **тесты НЕ запускались**)
-- [ ] Этап 4: Поиск жилья (SQL) + тесты
+- [x] Этап 4: Поиск жилья (SQL) + тесты (код написан, **тесты НЕ запускались**)
 - [ ] Этап 5: Бронирование + тесты
 - [ ] Этап 6: Repository-рефакторинг (если не сделан по ходу)
 - [ ] Этап 7: Полный прогон тестов, финальные правки
@@ -71,3 +71,24 @@
   повторной оферты (не дублируется, цена/units обновляются), 422 на невалидный payload, 422 на
   неизвестного supplier, `GET /api/imports/{id}` возвращает статус. **Тесты не запускались** —
   выполнение команд отложено до конца сессии по просьбе пользователя.
+
+## Заметки по Этапу 4
+
+- `OfferRepository::findCheapestActiveOffersPerProperty()` — весь SQL на query builder (`DB::table`),
+  без единой PHP-группировки: внутренний запрос джойнит `offers+properties+suppliers`, фильтрует
+  (даты точное совпадение, `max_guests >=`, `available_units > 0`, `expires_at > now()`, опциональный
+  `city`), считает `ROW_NUMBER() OVER (PARTITION BY offers.property_id ORDER BY offers.price ASC)`;
+  внешний запрос оборачивает его как подзапрос (`DB::table(DB::raw('(...) as ranked_offers'))
+  ->mergeBindings(...)`), берёт `rn = 1`, сортирует по `price` и пагинирует через `->paginate()`
+  (query builder, не `Collection::paginate()`).
+  Оконные функции поддерживаются и MySQL 8+, и SQLite (используется в тестах) — совместимо с обеими.
+- `PropertyController@index` — валидация query-параметров инлайн через `$request->validate()`
+  (`check_in`/`check_out`/`guests` обязательны, `city`/`page` опциональны) — отдельный Form Request
+  класс не заводил, т.к. в ориентире директорий (раздел 6) для поиска он не указан.
+  `SearchOffersDTO::fromArray($validated)` → repository → `PropertyResource::collection()`.
+- `PropertyResource` строится из "сырых" строк query builder (не Eloquent-моделей) — обращения вида
+  `$this->property_code` работают за счёт `__get`-проксирования `JsonResource` к `$this->resource`.
+- Тесты в `tests/Feature/PropertySearchTest.php`: самая дешёвая оферта на объект (2 оферты, разные
+  supplier/price), фильтрация (город/даты/guests/available_units/expires_at — по одному нарушению на
+  тест), поиск без фильтра города, пагинация (20 объектов → 15+5 по страницам, `meta.total/per_page/
+  current_page`), 422 при отсутствии обязательных параметров. **Тесты не запускались**.
