@@ -3,7 +3,7 @@
 - [x] Этап 0: Инициализация проекта Laravel
 - [x] Этап 1: Миграции, модели, factories, seeders (код написан, **не верифицирован запуском** — см. заметки)
 - [x] Этап 2: DTO (код написан, **не верифицирован запуском**)
-- [ ] Этап 3: Импорт (endpoint + Job + идемпотентность) + тесты
+- [x] Этап 3: Импорт (endpoint + Job + идемпотентность) + тесты (код написан, **тесты НЕ запускались**)
 - [ ] Этап 4: Поиск жилья (SQL) + тесты
 - [ ] Этап 5: Бронирование + тесты
 - [ ] Этап 6: Repository-рефакторинг (если не сделан по ходу)
@@ -48,3 +48,26 @@
   были действительно неизменяемыми (обычный `Carbon` — мутабельный объект).
 - Не запускал `php artisan route:list`/автозагрузку классов — по договорённости выполнение команд
   отложено до конца сессии, когда пользователь сам всё проверит.
+
+## Заметки по Этапу 3
+
+- `routes/api.php` создан с нуля (в свежем Laravel 12 skeleton файла не было) и подключён в
+  `bootstrap/app.php` (`withRouting(api: ...)`). Роуты: `POST /api/imports`, `GET /api/imports/{import}`.
+- `ImportRequest` — структура payload + `exists:suppliers,slug`; `after:offers.*.check_in` для
+  `check_out` (Laravel поддерживает wildcard-ссылку на соседнее поле того же индекса массива).
+- `ImportRepository`: `findExisting()`, `createFromPayload()` (сохраняет `raw_payload` через
+  `ImportPayloadDTO::toArray()` — добавил `toArray()` в DTO для чистого round-trip fromArray↔toArray),
+  `upsertOffers()` (find-or-create Property по `code`, `updateOrCreate` Offer по `supplier_id+external_id`).
+  `total_offers`/`processed_offers` считаются от количества офферов в payload.
+- `ProcessImportJob` — принимает `Import` (SerializesModels), в `handle()` перечитывает импорт
+  (`fresh()`), восстанавливает DTO из `raw_payload`, ставит `processing`, оборачивает `upsertOffers`
+  в `DB::transaction`, по успеху — `completed` + счётчики, по исключению — `failed` + `error`
+  (исключение не пробрасывается дальше, обработка ошибки — часть бизнес-логики, а не retry очереди).
+- `ImportController`: idempotency-проверка через `findExisting()` до создания — если импорт уже есть,
+  джоба не диспатчится повторно, ответ 202 с текущим статусом существующей записи. Два ресурса:
+  `ImportAcceptedResource` (`id`, `status` — под ответ POST) и `ImportResource` (полный, под GET).
+- Тесты в `tests/Feature/ImportTest.php`: успешный импорт+dispatch, обработка job → completed,
+  идемпотентность повторного импорта (нет дубликата Import, job не диспатчится второй раз), upsert
+  повторной оферты (не дублируется, цена/units обновляются), 422 на невалидный payload, 422 на
+  неизвестного supplier, `GET /api/imports/{id}` возвращает статус. **Тесты не запускались** —
+  выполнение команд отложено до конца сессии по просьбе пользователя.

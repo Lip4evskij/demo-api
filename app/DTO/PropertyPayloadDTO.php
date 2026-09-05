@@ -18,4 +18,13 @@ readonly class PropertyPayloadDTO
             city: $data['city'],
         );
     }
+
+    public function toArray(): array
+    {
+        return [
+            'code' => $this->code,
+            'name' => $this->name,
+            'city' => $this->city,
+        ];
+    }
 }

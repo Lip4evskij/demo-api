@@ -32,4 +32,19 @@ readonly class OfferPayloadDTO
             expiresAt: CarbonImmutable::parse($data['expires_at']),
         );
     }
+
+    public function toArray(): array
+    {
+        return [
+            'external_id' => $this->externalId,
+            'property' => $this->property->toArray(),
+            'check_in' => $this->checkIn->toDateString(),
+            'check_out' => $this->checkOut->toDateString(),
+            'max_guests' => $this->maxGuests,
+            'price' => $this->price,
+            'currency' => $this->currency,
+            'available_units' => $this->availableUnits,
+            'expires_at' => $this->expiresAt->toISOString(),
+        ];
+    }
 }

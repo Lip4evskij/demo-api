@@ -28,4 +28,17 @@ readonly class ImportPayloadDTO
             ),
         );
     }
+
+    public function toArray(): array
+    {
+        return [
+            'supplier' => $this->supplierSlug,
+            'external_import_id' => $this->externalImportId,
+            'sent_at' => $this->sentAt->toISOString(),
+            'offers' => array_map(
+                static fn (OfferPayloadDTO $offer): array => $offer->toArray(),
+                $this->offers,
+            ),
+        ];
+    }
 }
