@@ -7,6 +7,7 @@ use App\Models\Import;
 use App\Models\Offer;
 use App\Models\Property;
 use App\Models\Supplier;
+use RuntimeException;
 
 class ImportRepository
 {
@@ -20,7 +21,11 @@ class ImportRepository
 
     public function createFromPayload(ImportPayloadDTO $dto): Import
     {
-        $supplier = Supplier::query()->where('slug', $dto->supplierSlug)->firstOrFail();
+        $supplier = Supplier::query()->where('slug', $dto->supplierSlug)->first();
+
+        if ($supplier === null) {
+            throw new RuntimeException("Supplier not found: {$dto->supplierSlug}");
+        }
 
         return Import::query()->create([
             'supplier_id' => $supplier->id,

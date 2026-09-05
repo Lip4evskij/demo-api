@@ -170,3 +170,24 @@ Repository-слой уже был выделен по ходу этапов 3–
 `GET /api/imports/{import}`, `GET /api/properties`, `POST /api/offers/{offer}/reservations`),
 5 сущностей, 5 DTO, 3 репозитория, 1 job, ~25 feature-тестов в 3 файлах — весь объём предстоит
 верифицировать пользователю самостоятельно.
+
+## Правки по ревью пользователя (после Этапа 7)
+
+Пользователь указал на 4 проблемы, все исправлены:
+
+- `PropertyController::index()` валидировал query-параметры инлайн через `$request->validate()` на
+  голом `Illuminate\Http\Request` — заменено на выделенный `SearchOffersRequest` (Form Request),
+  контроллер теперь типизирован на него, валидация внутри Request'а, а не в контроллере.
+- `ImportRepository::createFromPayload()` использовал `Supplier::query()->...->firstOrFail()`,
+  `ReservationRepository::createForOffer()` — `Offer::query()->lockForUpdate()->findOrFail(...)`.
+  Оба заменены на `first()`/`find()` с явной проверкой на `null`: в `ImportRepository` — бросает
+  `RuntimeException` (недостижимо в норме, т.к. существование supplier уже гарантировано валидацией
+  `ImportRequest`, но репозиторий больше не полагается на Eloquent-исключение `ModelNotFoundException`
+  как способ сигнализировать об ошибке); в `ReservationRepository` — трактует отсутствие строки как
+  `OfferNotAvailableException` (тот же 409, что и при нулевом `available_units`).
+- Возврат поиска жилья был анонимной `PropertyResource::collection($paginator)`
+  (`AnonymousResourceCollection`) — заменено на именованный `App\Http\Resources\PropertyCollection`
+  (`extends ResourceCollection`, `$collects = PropertyResource::class`), метод контроллера
+  типизирован конкретным классом `PropertyCollection`, а не общим/анонимным типом. Пагинация
+  (`links`/`meta`) в ответе не изменилась — это поведение общее для `ResourceCollection` независимо
+  от того, анонимный класс или именованный.

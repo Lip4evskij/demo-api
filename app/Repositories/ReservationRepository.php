@@ -21,9 +21,9 @@ class ReservationRepository
     public function createForOffer(Offer $offer, CreateReservationDTO $dto): Reservation
     {
         return DB::transaction(function () use ($offer, $dto) {
-            $locked = Offer::query()->lockForUpdate()->findOrFail($offer->id);
+            $locked = Offer::query()->lockForUpdate()->find($offer->id);
 
-            if ($locked->available_units <= 0) {
+            if ($locked === null || $locked->available_units <= 0) {
                 throw new OfferNotAvailableException('No available units for this offer.');
             }
 
