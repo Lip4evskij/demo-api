@@ -1,59 +1,125 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel REST API — импорт и бронирование жилья
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Backend-only REST API: приём импортов от поставщиков жилья (асинхронная обработка через очередь),
+поиск актуальных предложений и бронирование.
 
-## About Laravel
+## Репозиторий
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Git-репозиторий создан локально. Ссылка на удалённый репозиторий появится здесь после того, как он
+будет запушен (например, на GitHub/GitLab) — `git remote add origin <url> && git push -u origin main`.
+История коммитов ведётся по этапам реализации (см. `git log`).
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Стек
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+, Laravel 12
+- MySQL 8+ (рабочая БД), очередь — драйвер `database`
+- Тесты — PHPUnit (стандартный для Laravel), изолированная тестовая БД — SQLite in-memory
 
-## Learning Laravel
+## Установка и запуск
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Настройте подключение к MySQL в `.env` (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) —
+база данных должна существовать заранее (`CREATE DATABASE laravel;` или другое имя по вашему выбору).
 
-## Laravel Sponsors
+Миграции в рамках разработки **только созданы, но не применены** к рабочей БД — примените их сами:
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+```bash
+php artisan migrate --seed
+# или раздельно:
+php artisan migrate
+php artisan db:seed
+```
 
-### Premium Partners
+Сидер `SupplierSeeder` создаёт двух поставщиков: `supplier-a`, `supplier-b`.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Запустите обработчик очереди (импорт обрабатывается асинхронно, драйвер `database`):
 
-## Contributing
+```bash
+php artisan queue:work
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Команды
 
-## Code of Conduct
+| Действие                     | Команда                              |
+|-------------------------------|---------------------------------------|
+| Применить миграции             | `php artisan migrate`                |
+| Откатить миграции              | `php artisan migrate:rollback`       |
+| Прогнать сидеры                | `php artisan db:seed`                |
+| Запустить воркер очереди       | `php artisan queue:work`             |
+| Прогнать тесты                 | `php artisan test` (или `composer test`) |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Тесты используют **отдельную тестовую БД** (SQLite in-memory), не связанную с рабочей MySQL —
+настроена и в `phpunit.xml` (приоритетна при `php artisan test`), и в `.env.testing`. Миграции к этой
+тестовой БД применяются автоматически на каждый запуск теста (`RefreshDatabase`) — рабочей MySQL-базы
+это не касается.
 
-## Security Vulnerabilities
+## Endpoints
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+| Метод | Путь                              | Описание                                   |
+|-------|-------------------------------------|---------------------------------------------|
+| POST  | `/api/imports`                      | Принять импорт пропозиций (202, асинхронно) |
+| GET   | `/api/imports/{import}`             | Статус импорта                              |
+| GET   | `/api/properties`                   | Поиск актуального жилья                     |
+| POST  | `/api/offers/{offer}/reservations`  | Бронирование оферты                         |
 
-## License
+## Идемпотентность импорта
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Идемпотентность обеспечивается на двух уровнях, оба закреплены составными уникальными индексами в БД
+(а не только проверками в PHP, чтобы исключить рассинхронизацию под нагрузкой на уровне схемы):
+
+1. **Уровень импорта**: `imports` имеет уникальный составной индекс `(supplier_id, external_import_id)`.
+   При получении `POST /api/imports` контроллер сначала ищет уже существующий `Import` с той же парой
+   значений (`ImportRepository::findExisting()`). Если он найден — новая запись не создаётся и job
+   **не** ставится в очередь повторно; в ответе (202) возвращаются `id`/`status` уже существующего
+   импорта. Это защищает от повторной постановки в очередь при ретраях со стороны поставщика (то же
+   тело запроса, отправленное дважды из-за таймаута на его стороне, не приведёт к двойной обработке).
+
+2. **Уровень оферты**: `offers` имеет уникальный составной индекс `(supplier_id, external_id)`.
+   Обработка офферов внутри `ProcessImportJob` (`ImportRepository::upsertOffers()`) использует
+   `updateOrCreate()` по этой паре — повторная оферта с тем же `external_id` от того же поставщика
+   **обновляет** существующую запись (цену, доступность, даты и т.д.), а не создаёт дубликат. Это
+   покрывает случай, когда один и тот же объект приходит в разных импортах поставщика с обновлёнными
+   ценами/доступностью.
+
+`Property` ищется/создаётся по `code` (`firstOrCreate`) — если объект уже существует, он переиспользуется,
+если нет — создаётся с данными из первого импорта, в котором он встретился.
+
+## Защита от двойного бронирования
+
+`ReservationRepository::createForOffer()` оборачивает создание брони в `DB::transaction()` и внутри
+неё выполняет `Offer::lockForUpdate()->findOrFail($offer->id)` — пессимистичная блокировка строки
+оффера (`SELECT ... FOR UPDATE`). Проверка `available_units > 0` выполняется **после** получения
+блокировки, а не по модели, переданной через route model binding (та могла быть прочитана раньше и
+быть уже устаревшей).
+
+Механизм работает так: если два запроса одновременно пытаются забронировать последнюю единицу, первый
+получает блокировку строки и продолжает выполнение (декремент + создание `Reservation`) внутри своей
+транзакции. Второй запрос блокируется на `lockForUpdate()` и ждёт, пока первая транзакция не
+закоммитится. Как только это происходит, второй запрос перечитывает уже актуальное (декрементированное)
+значение `available_units`, видит `0` и выбрасывает `OfferNotAvailableException`, которое маппится в
+**409 Conflict** через обработчик исключений в `bootstrap/app.php`. `Reservation` в этом случае не
+создаётся, транзакция второго запроса откатывается без побочных эффектов.
+
+Выбор именно `lockForUpdate()`, а не оптимистичной блокировки (версионирование + retry) или чистого
+атомарного `UPDATE ... WHERE available_units > 0`:
+
+- Атомарный `UPDATE offers SET available_units = available_units - 1 WHERE id = ? AND available_units > 0`
+  с проверкой affected rows — тоже валидное решение и в целом дешевле (без явной блокировки), но плохо
+  сочетается с одновременным созданием связанной записи `Reservation` в той же логической операции:
+  пришлось бы либо создавать `Reservation` до подтверждения успешности `UPDATE` (риск создать бронь
+  без реально уменьшенных единиц при гонке), либо усложнять логику проверкой affected rows и ручным
+  откатом. `lockForUpdate()` + транзакция дают более прямолинейный и читаемый код: "заблокировали →
+  проверили → изменили → создали связанную запись" — как единый атомарный шаг, что для read-modify-write
+  с побочным созданием записи предпочтительнее.
+- Оптимистичная блокировка (колонка `version` + `WHERE version = ?` + retry-цикл на конфликте) добавляет
+  сложность (retry-логику, риск живой блокировки под высокой конкуренцией на популярном оффере) без
+  ощутимого выигрыша при коротких транзакциях, какими являются бронирования.
+
+## `.env.example`
+
+Файл в корне проекта, без секретов — плейсхолдеры для MySQL-доступа (`DB_PASSWORD` пустой).
