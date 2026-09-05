@@ -9,7 +9,6 @@ use App\Http\Resources\ImportAcceptedResource;
 use App\Http\Resources\ImportResource;
 use App\Jobs\ProcessImportJob;
 use App\Models\Import;
-use App\Models\Supplier;
 use App\Repositories\ImportRepository;
 use Illuminate\Http\JsonResponse;
 
@@ -27,9 +26,7 @@ class ImportController extends Controller
             return (new ImportAcceptedResource($existing))->response()->setStatusCode(202);
         }
 
-        $supplier = Supplier::query()->where('slug', $dto->supplierSlug)->firstOrFail();
-
-        $import = $this->imports->createFromPayload($supplier, $dto);
+        $import = $this->imports->createFromPayload($dto);
 
         ProcessImportJob::dispatch($import);
 

@@ -18,8 +18,10 @@ class ImportRepository
             ->first();
     }
 
-    public function createFromPayload(Supplier $supplier, ImportPayloadDTO $dto): Import
+    public function createFromPayload(ImportPayloadDTO $dto): Import
     {
+        $supplier = Supplier::query()->where('slug', $dto->supplierSlug)->firstOrFail();
+
         return Import::query()->create([
             'supplier_id' => $supplier->id,
             'external_import_id' => $dto->externalImportId,
