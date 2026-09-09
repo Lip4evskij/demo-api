@@ -16,6 +16,10 @@ class PropertyController extends Controller
     {
         $dto = SearchOffersDTO::fromArray($request->validated());
 
-        return new PropertyCollection($this->offers->findCheapestActiveOffersPerProperty($dto));
+        $properties = $this
+            ->offers
+            ->findCheapestActiveOffersPerProperty($dto);
+
+        return new PropertyCollection($properties);
     }
 }

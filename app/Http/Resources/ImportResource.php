@@ -14,7 +14,7 @@ class ImportResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'supplier' => $this->supplier->slug,
+            'supplier' => SupplierResource::make($this->whenLoaded('supplier')),
             'external_import_id' => $this->external_import_id,
             'sent_at' => $this->sent_at?->toISOString(),
             'status' => $this->status,

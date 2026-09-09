@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\UniqueImportForSupplier;
 use Illuminate\Foundation\Http\FormRequest;
 
 class ImportRequest extends FormRequest
@@ -18,7 +19,11 @@ class ImportRequest extends FormRequest
     {
         return [
             'supplier' => ['required', 'string', 'exists:suppliers,slug'],
-            'external_import_id' => ['required', 'string'],
+            'external_import_id' => [
+                'required',
+                'string',
+                new UniqueImportForSupplier($this->input('supplier')),
+            ],
             'sent_at' => ['required', 'date'],
             'offers' => ['required', 'array', 'min:1'],
             'offers.*.external_id' => ['required', 'string'],

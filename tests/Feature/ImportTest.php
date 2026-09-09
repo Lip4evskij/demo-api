@@ -70,7 +70,7 @@ class ImportTest extends TestCase
 
         $import = Import::query()->where('supplier_id', $supplier->id)->firstOrFail();
 
-        (new ProcessImportJob($import))->handle(app(ImportRepository::class));
+        (new ProcessImportJob($import->id))->handle(app(ImportRepository::class));
 
         $import->refresh();
 
@@ -89,7 +89,7 @@ class ImportTest extends TestCase
         Queue::fake();
 
         $this->postJson('/api/imports', $this->validPayload())->assertStatus(202);
-        $this->postJson('/api/imports', $this->validPayload())->assertStatus(202);
+        $this->postJson('/api/imports', $this->validPayload())->assertStatus(422);
 
         $this->assertSame(1, Import::query()->count());
         Queue::assertPushed(ProcessImportJob::class, 1);
@@ -102,7 +102,7 @@ class ImportTest extends TestCase
 
         $this->postJson('/api/imports', $this->validPayload());
         $firstImport = Import::query()->where('supplier_id', $supplier->id)->firstOrFail();
-        (new ProcessImportJob($firstImport))->handle($repository);
+        (new ProcessImportJob($firstImport->id))->handle($repository);
 
         $this->postJson('/api/imports', $this->validPayload([
             'external_import_id' => 'import-2026-09-01-002',
@@ -125,7 +125,7 @@ class ImportTest extends TestCase
             ],
         ]));
         $secondImport = Import::query()->where('external_import_id', 'import-2026-09-01-002')->firstOrFail();
-        (new ProcessImportJob($secondImport))->handle($repository);
+        (new ProcessImportJob($secondImport->id))->handle($repository);
 
         $this->assertSame(1, Offer::query()->where('external_id', 'offer-a-10001')->count());
         $this->assertDatabaseHas('offers', [
@@ -163,7 +163,7 @@ class ImportTest extends TestCase
 
         $response->assertOk();
         $response->assertJsonPath('data.id', $import->id);
-        $response->assertJsonPath('data.supplier', 'supplier-a');
+        $response->assertJsonPath('data.supplier.slug', 'supplier-a');
         $response->assertJsonPath('data.status', 'completed');
     }
 }

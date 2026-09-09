@@ -17,11 +17,11 @@ class ProcessImportJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public function __construct(public Import $import) {}
+    public function __construct(public readonly int $importId) {}
 
     public function handle(ImportRepository $repository): void
     {
-        $import = $this->import->fresh();
+        $import = Import::query()->find($this->importId);
 
         if ($import === null || $import->status === Import::STATUS_COMPLETED) {
             return;
