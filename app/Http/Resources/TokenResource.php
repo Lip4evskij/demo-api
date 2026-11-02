@@ -6,7 +6,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Knuckles\Scribe\Attributes\ResponseField;
 
-
 class TokenResource extends JsonResource
 {
     public static $wrap;
@@ -30,7 +29,7 @@ class TokenResource extends JsonResource
                 'access_token',
                 'token_type',
                 'expires_in',
-            ]
+            ],
         ];
     }
 }

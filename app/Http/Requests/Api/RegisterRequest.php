@@ -13,7 +13,7 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'username' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',
@@ -32,5 +32,14 @@ class RegisterRequest extends FormRequest
             email: $this->string('email')->toString(),
             password: $this->string('password')->toString(),
         );
+    }
+
+    public function bodyParameters(): array
+    {
+        return [
+            'name' => ['description' => 'Display name.', 'example' => 'john'],
+            'email' => ['description' => 'Unique user email.', 'example' => 'john@example.com'],
+            'password' => ['description' => 'At least 8 characters.', 'example' => 'Secret123!'],
+        ];
     }
 }

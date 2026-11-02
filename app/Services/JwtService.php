@@ -44,7 +44,7 @@ class JwtService
     {
         $claims = $this->parse($token);
 
-        if (!$claims) {
+        if (! $claims) {
             return false;
         }
 
@@ -61,6 +61,6 @@ class JwtService
 
     private function revokedKey(string $jti): string
     {
-        return 'jwt:revoked:' . $jti;
+        return 'jwt:revoked:'.$jti;
     }
 }

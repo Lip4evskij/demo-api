@@ -16,7 +16,9 @@ class MessageResource extends JsonResource
     public static $wrap;
 
     protected int $statusCode = Response::HTTP_OK;
+
     private const STATUS_SUCCESS = 'success';
+
     private const STATUS_ERROR = 'error';
 
     #[ResponseField('success', 'bool')]
@@ -27,9 +29,9 @@ class MessageResource extends JsonResource
         $resource = (array) $this->resource;
 
         return [
-            'success' => (bool)Arr::get($resource, 'success'),
-            'status' => (string)Arr::get($resource, 'status') ?: self::STATUS_ERROR,
-            'message' => (string)Arr::get($resource, 'message'),
+            'success' => (bool) Arr::get($resource, 'success'),
+            'status' => (string) Arr::get($resource, 'status') ?: self::STATUS_ERROR,
+            'message' => (string) Arr::get($resource, 'message'),
         ];
     }
 

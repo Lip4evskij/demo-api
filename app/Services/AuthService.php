@@ -13,12 +13,11 @@ final readonly class AuthService
 {
     public function __construct(private JwtService $jwt) {}
 
-
     public function login(LoginDto $loginDto): string
     {
         $user = User::findByEmail($loginDto->email);
 
-        if (!$user || !Hash::check($loginDto->password, $user->password_hash)) {
+        if (! $user || ! Hash::check($loginDto->password, $user->password)) {
             throw new RuntimeException('Unauthorized. Invalid credentials', ResponseCode::HTTP_UNAUTHORIZED);
         }
 
@@ -29,15 +28,14 @@ final readonly class AuthService
     {
         $user = User::create([
             'email' => $registerDto->email,
-            'password_hash' => Hash::make($registerDto->password),
-            'username' => $registerDto->username
+            'name' => $registerDto->username,
+            'password' => $registerDto->password,
         ]);
 
-        if (!$user) {
+        if (! $user) {
             throw new RuntimeException('Unauthorized. Register error', ResponseCode::HTTP_UNAUTHORIZED);
         }
 
         return $this->jwt->issue($user->id);
     }
-
 }

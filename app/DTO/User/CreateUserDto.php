@@ -8,7 +8,6 @@ readonly class CreateUserDto
         public string $username,
         public string $email,
         public string $password,
-    )
-    {}
+    ) {}
 
 }
