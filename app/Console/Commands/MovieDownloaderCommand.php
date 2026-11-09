@@ -277,7 +277,7 @@ class MovieDownloaderCommand extends Command
     {
         $movies = [];
         foreach ($document->querySelectorAll('#dle-content a.shfilm') as $anchor) {
-            $name = trim($anchor->querySelector('.shfiltitle span')?->textContent ?? '');
+            $name = trim($anchor->querySelector('.shfiltitle span')->textContent ?? '');
             $link = trim($anchor->getAttribute('href') ?? '');
 
             if ($name && $link) {
@@ -361,7 +361,7 @@ class MovieDownloaderCommand extends Command
         }
     }
 
-    private function resolveMode(): ?string
+    private function resolveMode(): string
     {
         $modeList = Genre::query()
             ->orderBy('name')
