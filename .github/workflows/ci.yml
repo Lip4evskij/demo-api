@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pint:
+    name: Pint (code style)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, libxml, mbstring
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - run: vendor/bin/pint --test
+
+  larastan:
+    name: Larastan (static analysis)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, libxml, mbstring
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - run: vendor/bin/phpstan analyse --memory-limit=1G --no-progress --error-format=github
+
+  pest:
+    name: Pest (tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: dom, libxml, mbstring, pdo_sqlite, sqlite3
+          coverage: none
+
+      - uses: ramsey/composer-install@v3
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          sed -i "s|^JWT_SECRET=.*|JWT_SECRET=$(openssl rand -hex 32)|" .env
+
+      - run: vendor/bin/pest --ci

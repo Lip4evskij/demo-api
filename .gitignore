@@ -16,6 +16,9 @@
 /public/build
 /public/hot
 /public/storage
+/public/vendor/scribe
+/resources/views/scribe
+/.scribe
 /storage/*.key
 /storage/pail
 /vendor

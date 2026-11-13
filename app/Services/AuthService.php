@@ -32,10 +32,6 @@ final readonly class AuthService
             'password' => $registerDto->password,
         ]);
 
-        if (! $user) {
-            throw new RuntimeException('Unauthorized. Register error', ResponseCode::HTTP_UNAUTHORIZED);
-        }
-
         return $this->jwt->issue($user->id);
     }
 }

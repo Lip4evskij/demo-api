@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(vendor/bin/pest:*)",
+      "Bash(vendor/bin/pint:*)",
+      "Bash(vendor/bin/phpstan:*)",
+      "Bash(php artisan make:*)",
+      "Bash(php artisan migrate --env=testing:*)",
+      "Bash(php artisan route:list:*)"
+    ],
+    "deny": [
+      "Bash(php artisan migrate:fresh:*)",
+      "Bash(php artisan db:wipe:*)",
+      "Bash(git push:*)",
+      "Read(.env)",
+      "Read(.env.production)"
+    ]
+  }
+}
